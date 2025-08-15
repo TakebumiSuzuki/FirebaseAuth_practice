@@ -1,0 +1,69 @@
+
+firebase-service-account.json
+
+# --- Virtual Environment ---
+# Pythonの仮想環境フォルダ。ライブラリが大量に含まれるため必須。
+.venv/
+venv/
+env/
+
+# --- Python Cache & Compiled Files ---
+# Pythonが自動生成するキャッシュファイルやコンパイル済みファイル。
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- Environment Variables ---
+# APIキーやデータベース接続情報などの秘密情報を含むファイル。
+# これをGitに含めてしまうと、セキュリティ上の重大な問題になります。
+.env
+.flaskenv
+
+# --- Secrets / Service Account Keys ---
+# Firebaseのサービスアカウントキーなど、外部サービスの秘密鍵。
+*.json
+# もし特定の名前のキーのみを使っている場合は、以下のように明記する方が安全です。
+# firebase-service-account.json
+
+# --- IDE & Editor Settings ---
+# 各開発者個人のエディタ設定がリポジトリに含まれるのを防ぐ。
+.vscode/
+.idea/
+*.swp
+*~
+
+# --- Operating System Files ---
+# macOSやWindowsが自動生成するシステムファイル。
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Flask Specific ---
+# Flaskがインスタンス固有の設定やデータベースファイルを保存することがあるフォルダ。
+instance/
+
+# --- Database Files ---
+# 開発用のローカルデータベースファイル。
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Log Files ---
+# アプリケーションが出力するログファイル。
+*.log
+logs/
+
+# --- Test & Coverage Reports ---
+# テスト実行時に生成されるキャッシュやカバレッジレポート。
+.pytest_cache/
+.coverage
+htmlcov/
+nosetests.xml
+coverage.xml
+
+# --- Build & Distribution Artifacts ---
+# Pythonパッケージをビルドする際に生成されるフォルダ。
+build/
+dist/
+*.egg-info/
