@@ -1,4 +1,4 @@
-
+import os
 class BaseConfig():
     SECRET_KEY= 'iefnawef93jf2u9ufn2'
 
@@ -7,10 +7,12 @@ class BaseConfig():
 
 
 class DevelopmentConfig(BaseConfig):
-    pass
+    FIREBASE_SERVICE_ACCOUNT_KEY_PATH = os.getenv('FIREBASE_SERVICE_ACCOUNT_KEY_PATH')
+
 
 class ProductionConfig(BaseConfig):
-    pass
+    FIREBASE_SERVICE_ACCOUNT_KEY_PATH = os.getenv('FIREBASE_SERVICE_ACCOUNT_KEY_PATH')
+
 
 class TestingConfig(BaseConfig):
     pass
