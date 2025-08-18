@@ -7,12 +7,12 @@
   const email = ref('');
   const password = ref('');
 
-  const errorMessage = ref('');
-  const successMessage = ref('');
+  const successMessage = ref(null);
+  const errorMessage = ref(null);
 
   const register = async () => {
-    errorMessage.value = '';
-    successMessage.value = '';
+    successMessage.value = null;
+    errorMessage.value = null;
 
     try {
       // 第二引数は必ずメールアドレス、第三引数は必ずパスワード
@@ -22,14 +22,41 @@
         password.value
       );
 
-      await updateProfile(userCredential.user, {
-        displayName: username.value
-      });
+      await updateProfile(
+        userCredential.user,
+        { displayName: username.value }
+      );
+
       successMessage.value = "登録が成功しました！";
       console.log("User:", userCredential.user);
+
     } catch (error) {
-      errorMessage.value = error.message;
-      console.error(error);
+      // 開発者向けにエラー詳細をコンソールに出力
+      console.error("Firebase Auth Error:", error.code, error.message);
+
+      let userMessage;
+
+      // Firebaseから返されたエラーコードに応じて、ユーザーへのメッセージを分岐
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          userMessage = "このメールアドレスは既に使用されています。";
+          break;
+        case 'auth/invalid-email':
+          userMessage = "メールアドレスの形式が正しくありません。";
+          break;
+        case 'auth/weak-password':
+          userMessage = "パスワードは6文字以上で設定してください。";
+          break;
+        case 'auth/operation-not-allowed':
+          // Firebaseコンソールで認証方法が有効でない場合など
+          userMessage = "現在、この登録方法はご利用いただけません。";
+          break;
+        default:
+          userMessage = "予期せぬエラーが発生しました。時間をおいて再度お試しください。";
+          break;
+      }
+      // 決定したエラーメッセージを画面に表示
+      errorMessage.value = userMessage;
     }
   };
 
