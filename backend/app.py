@@ -1,9 +1,9 @@
 from flask import Flask
-from .extensions import db, migrate
-from .config import DevelopmentConfig, ProductionConfig, TestingConfig
-from .blueprints.admin import admin_bp
-from .blueprints.auth import auth_bp
-from .blueprints.users import users_bp
+from backend.extensions import db, migrate
+from backend.config import DevelopmentConfig, ProductionConfig, TestingConfig
+from backend.blueprints.admin import admin_bp
+from backend.blueprints.auth import auth_bp
+from backend.blueprints.users import users_bp
 import firebase_admin
 from firebase_admin import credentials
 
@@ -44,6 +44,16 @@ def create_app(config_class=DevelopmentConfig):
     app.register_blueprint(admin_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
+
+
+    from .utils import error_response
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        app.logger.error(f"Unhandled exception: {e}", exc_info=True)
+        if app.config['DEBUG']:
+            raise e  # 開発中はFlaskのデバッグ画面で例外を確認
+        return error_response("internal-error", "An unexpected error occurred.", 500)
+
 
     return app
 

@@ -1,5 +1,6 @@
 
 firebase-service-account.json
+node_modules
 
 # --- Virtual Environment ---
 # Pythonの仮想環境フォルダ。ライブラリが大量に含まれるため必須。
@@ -21,10 +22,9 @@ __pycache__/
 .flaskenv
 
 # --- Secrets / Service Account Keys ---
-# Firebaseのサービスアカウントキーなど、外部サービスの秘密鍵。
-*.json
+
 # もし特定の名前のキーのみを使っている場合は、以下のように明記する方が安全です。
-# firebase-service-account.json
+firebase-service-account.json
 
 # --- IDE & Editor Settings ---
 # 各開発者個人のエディタ設定がリポジトリに含まれるのを防ぐ。

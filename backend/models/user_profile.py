@@ -1,7 +1,7 @@
-from ..extensions import db
+from backend.extensions import db
 from sqlalchemy.orm import mapped_column, Mapped
 from datetime import date
-from ..enums import Gender
+from backend.enums import Gender
 
 
 class UserProfile(db.Model):
