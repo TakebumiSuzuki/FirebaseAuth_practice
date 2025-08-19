@@ -1,7 +1,7 @@
 from flask import Flask
 from backend.extensions import db, migrate
 from backend.config import DevelopmentConfig, ProductionConfig, TestingConfig
-from backend.blueprints.admin import admin_bp
+# from blueprints.admin import admin_bp
 from backend.blueprints.auth import auth_bp
 from backend.blueprints.users import users_bp
 import firebase_admin
@@ -41,7 +41,7 @@ def create_app(config_class=DevelopmentConfig):
     db.init_app(app)
     migrate.init_app(app, db)
 
-    app.register_blueprint(admin_bp)
+    # app.register_blueprint(admin_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
 

@@ -34,7 +34,7 @@ def login_required(f):
                     "Invalid ID token.",
                     401
                 )
-                
+
             g.user = decoded_token
 
         except auth.ExpiredIdTokenError:

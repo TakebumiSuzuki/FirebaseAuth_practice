@@ -1,11 +1,13 @@
 <script setup>
-  // import Register from '@/views/RegisterView.vue'
+  import RegisterView from '@/views/RegisterView.vue'
   import LoginView from '@/views/LoginView.vue'
+  import HeaderView from '@/views/HeaderView.vue'
 </script>
 
 
 
 <template>
-  <LoginView />
+  <HeaderView />
+  <RegisterView />
 </template>
 

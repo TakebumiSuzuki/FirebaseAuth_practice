@@ -8,10 +8,10 @@ class UserProfile(db.Model):
     __tablename__ = 'user_profile'
 
     # Firebase Authenticationが生成するユーザーID（UID）最大128文字の空でない文字列
-    id: Mapped[str] = mapped_column(db.String(128), primary_key=True)
+    uid: Mapped[str] = mapped_column(db.String(128), primary_key=True)
 
     # unique=Trueを指定すれば、パフォーマンス向上のためのインデックスも自動的に作成されます。
-    name: Mapped[str] = mapped_column(db.String(50))
+    display_name: Mapped[str] = mapped_column(db.String(50))
 
     birthday: Mapped[date|None] = mapped_column(db.Date())
 

@@ -1,0 +1,60 @@
+name: firebase_practice_app
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/frontend
+      # マウントの例外ルール(ホスト側のパスを指定せず、コンテナ内の絶対パスだけを記述する)
+      # flask側では、.venvを使わずシステムにパッケージをインストールしているので、この問題は起こらない。
+      # （初回起動なら）まず、イメージの中にある /frontend/node_modules の中身を、
+      # frontend_node_modules ボリュームにコピーする。
+      # そして、そのボリュームをコンテナの /frontend/node_modules にマウントする
+      - frontend_node_modules:/frontend/node_modules
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./backend:/backend
+    # pg_isready コマンドが成功を返してから backend が起動開始
+    depends_on:
+      db:
+        condition: service_healthy
+    #　この記述があればdotenvは必要ないとのこと。つまり、環境変数はos.getenv() で直接取得可能
+    env_file:
+      - ./backend/.env
+
+
+  db:
+    # alpine で全く問題ありません。わざわざ bullseye を使う必要はほとんどありません
+    image: postgres:17.5-alpine3.20
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+    # データベースを初期化するための環境変数
+    # これらの値は、backend/.env 内のDATABASE_URLと一致させる必要がある
+    env_file:
+      - ./backend/.env
+
+    # (任意) デバッグ用にホストPCからDBに接続したい場合は以下のコメントを外す
+    ports:
+      - "5433:5432"
+
+    healthcheck:
+      # ${変数名:-デフォルト値}: 環境変数が未定義または空の場合、デフォルト値を使用
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-mydatabase}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+# 特定のパスではなく、Dockerエンジンが管理するpostgres_dataと名付けられた専用の領域にデータの実体が保存される
+volumes:
+  postgres_data:
+  # これはnpmによる仮想環境のモジュールファイルをバリュームで隠されないようにするため
+  frontend_node_modules:

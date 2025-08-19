@@ -2,6 +2,7 @@
   import { reactive, ref } from 'vue'
   import { auth } from "@/firebase";
   import { signInWithEmailAndPassword  } from "firebase/auth";
+  
 
   const formValues = reactive({
     email: '',
@@ -57,7 +58,6 @@
       }
       errorMessage.value = userMessage
     }
-
   }
 
 </script>

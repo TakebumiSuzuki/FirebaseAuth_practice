@@ -2,6 +2,7 @@
   import { ref } from "vue";
   import { auth } from "@/firebase";
   import { createUserWithEmailAndPassword, updateProfile  } from "firebase/auth";
+  import { apiClient } from '@/api'
 
   const username = ref('')
   const email = ref('');
@@ -22,10 +23,15 @@
         password.value
       );
 
+      // 以下のコードは FB authサーバーのユーザー情報を変えるだけで、IDトークンにはすぐ反映されない
+      // 次回リフレッシュ時にこのdisplayNameがIDトークンに反映される
       await updateProfile(
         userCredential.user,
         { displayName: username.value }
       );
+
+      await apiClient.post('/api/v1/auth/create-user-profile', { display_name : username.value })
+
 
       successMessage.value = "登録が成功しました！";
       console.log("User:", userCredential.user);

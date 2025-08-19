@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Annotated
 from datetime import date
-from backend.enums import Gender
+from enums import Gender
 
 
 # バリデーションが成功した場合、入力をGender.MALEのようなEnumオブジェクトに変換してくれる。
