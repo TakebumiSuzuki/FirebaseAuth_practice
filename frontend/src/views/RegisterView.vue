@@ -1,7 +1,7 @@
 <script setup>
   import { ref } from "vue";
   import { auth } from "@/firebase";
-  import { createUserWithEmailAndPassword, updateProfile  } from "firebase/auth";
+  import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
   import { apiClient } from '@/api'
 
   const username = ref('')
@@ -14,55 +14,80 @@
   const register = async () => {
     successMessage.value = null;
     errorMessage.value = null;
+    let userCredential = null;
 
+    // ステップ1: Firebase Authenticationでユーザーを作成
     try {
-      // 第二引数は必ずメールアドレス、第三引数は必ずパスワード
-      const userCredential = await createUserWithEmailAndPassword(
+      userCredential = await createUserWithEmailAndPassword(
         auth,
         email.value,
         password.value
       );
+    } catch (error) {
+      console.error("Firebase Auth Error:", error.code, error.message);
+      let userMessage;
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          userMessage = "This email address is already in use.";
+          break;
+        case 'auth/invalid-email':
+          userMessage = "The email address is not validly formatted.";
+          break;
+        case 'auth/weak-password':
+          userMessage = "The password must be at least 6 characters long.";
+          break;
+        case 'auth/operation-not-allowed':
+          userMessage = "This registration method is currently not available.";
+          break;
+        default:
+          userMessage = "An unexpected error occurred. Please try again later.";
+          break;
+      }
+      errorMessage.value = userMessage;
+      return;
+    }
 
-      // 以下のコードは FB authサーバーのユーザー情報を変えるだけで、IDトークンにはすぐ反映されない
-      // 次回リフレッシュ時にこのdisplayNameがIDトークンに反映される
+    // ステップ2: Firebaseプロファイルの更新とバックエンドでのユーザープロファイル作成
+    try {
+      // 以下のコードは FB authサーバーのユーザー情報を変えるだけで、
+      // IDトークンにはすぐ反映されない。次回リフレッシュ時にこのdisplayNameがIDトークンに反映される
       await updateProfile(
         userCredential.user,
         { displayName: username.value }
       );
-
-      await apiClient.post('/api/v1/auth/create-user-profile', { display_name : username.value })
-
-
-      successMessage.value = "登録が成功しました！";
-      console.log("User:", userCredential.user);
+      await apiClient.post(
+        '/api/v1/auth/create-user-profile',
+        { display_name: username.value }
+      );
+      successMessage.value = "Registration successful!";
+      console.log("User registered successfully:", userCredential.user);
 
     } catch (error) {
-      // 開発者向けにエラー詳細をコンソールに出力
-      console.error("Firebase Auth Error:", error.code, error.message);
+      console.error("Post-registration process failed:", error);
 
-      let userMessage;
-
-      // Firebaseから返されたエラーコードに応じて、ユーザーへのメッセージを分岐
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          userMessage = "このメールアドレスは既に使用されています。";
-          break;
-        case 'auth/invalid-email':
-          userMessage = "メールアドレスの形式が正しくありません。";
-          break;
-        case 'auth/weak-password':
-          userMessage = "パスワードは6文字以上で設定してください。";
-          break;
-        case 'auth/operation-not-allowed':
-          // Firebaseコンソールで認証方法が有効でない場合など
-          userMessage = "現在、この登録方法はご利用いただけません。";
-          break;
-        default:
-          userMessage = "予期せぬエラーが発生しました。時間をおいて再度お試しください。";
-          break;
+      // 後続の処理が失敗したため、作成したFirebaseユーザーのロールバックを試みる
+      if (userCredential) {
+        try {
+          await deleteUser(userCredential.user);
+          console.log("Successfully deleted Firebase user due to registration rollback.");
+        } catch (deleteError) {
+          // これは重大なエラー。Authにはユーザーが存在するがバックエンドには存在せず、クリーンアップにも失敗した状態
+          console.error("CRITICAL: Failed to delete Firebase user after a registration failure.", deleteError);
+          errorMessage.value = "A critical error occurred during registration cleanup. Please contact support.";
+          return; // 処理を中断
+        }
       }
-      // 決定したエラーメッセージを画面に表示
-      errorMessage.value = userMessage;
+
+      // 発生したエラーに応じて、より具体的なエラーメッセージをユーザーに提供する
+      // エラーがAxios（バックエンドAPI）からのものかチェック
+      if (error.response && error.response.data) {
+        errorMessage.value = `Failed to create your profile: ${error.response.data.message || 'Please try again.'}`;
+      } else if (error.code) { // Firebaseのエラーかチェック (例: updateProfile)
+        errorMessage.value = "Failed to update your profile information. The registration has been cancelled.";
+      } else {
+        // ネットワーク問題やその他の予期せぬエラーに対する汎用的なフォールバック
+        errorMessage.value = "An unexpected error occurred after creating your account. The registration has been cancelled.";
+      }
     }
   };
 

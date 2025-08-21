@@ -4,6 +4,7 @@ from backend.config import DevelopmentConfig, ProductionConfig, TestingConfig
 # from blueprints.admin import admin_bp
 from backend.blueprints.auth import auth_bp
 from backend.blueprints.users import users_bp
+from backend.blueprints.test import test_bp
 import firebase_admin
 from firebase_admin import credentials
 
@@ -16,7 +17,7 @@ def create_app(config_class=DevelopmentConfig):
 
     fb_key_path = app.config.get('FIREBASE_SERVICE_ACCOUNT_KEY_PATH')
 
-
+    print('test')
     if fb_key_path:
         try:
             # アプリがすでに初期化されていないかチェック
@@ -44,18 +45,21 @@ def create_app(config_class=DevelopmentConfig):
     # app.register_blueprint(admin_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
-
-
-    from .utils import error_response
-    @app.errorhandler(Exception)
-    def handle_exception(e):
-        app.logger.error(f"Unhandled exception: {e}", exc_info=True)
-        if app.config['DEBUG']:
-            raise e  # 開発中はFlaskのデバッグ画面で例外を確認
-        return error_response("internal-error", "An unexpected error occurred.", 500)
-
+    app.register_blueprint(test_bp)
 
     return app
+
+
+    # from .utils import error_response
+    # @app.errorhandler(Exception)
+    # def handle_exception(e):
+    #     app.logger.error(f"Unhandled exception: {e}", exc_info=True)
+    #     if app.config['DEBUG']:
+    #         raise e  # 開発中はFlaskのデバッグ画面で例外を確認
+    #     return error_response("internal-error", "An unexpected error occurred.", 500)
+
+
+    # return app
 
 
 

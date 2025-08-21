@@ -1,24 +1,196 @@
-from flask import Blueprint
+from functools import wraps
+from flask import Blueprint, request, jsonify, current_app
+from firebase_admin import auth
+from sqlalchemy.exc import SQLAlchemyError
+from backend.schemas.user_profile import ReadUserProfile
+from backend.schemas.firebase_user import AdminReadFirebaseUser
+
 from backend.decorators import login_required, admin_required
+from backend.utils import error_response
+from backend.models.user_profile import UserProfile
+from backend.extensions import db
 
 
-admin_users_bp = Blueprint('auth', __name__, url_prefix='/api/v1/admin/users')
+# from datetime import datetime, timezone
+# タイムスタンプ（ミリ秒）をISO 8601形式の文字列に変換するヘルパー関数
+# def format_timestamp(ts_ms):
+#     if not ts_ms:
+#         return None
+#     # ミリ秒を秒に変換
+#     return datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc).isoformat()
 
+admin_users_bp = Blueprint('admin_users', __name__, url_prefix='/api/v1/admin/users')
+
+def require_uid_in_payload(func):
+    @wraps(func)
+    def decorated_func(*args, **kwargs):
+        payload = request.get_json()
+        if not payload:
+            return error_response(code='bad_request', message='Request body is missing or not JSON.', status=400)
+
+        # 2. .get() を使って安全にuidを取得
+        uid = payload.get('uid')
+        if not uid:
+            return error_response(code='bad_request', message='User ID (uid) is missing in the payload.', status=400)
+        kwargs['uid'] = uid
+
+        return func(*args, **kwargs)
+
+    return decorated_func
 
 
 @admin_users_bp.get('')
 @login_required
 @admin_required
-def get_all_users():
-    # 全ユーザーリストを取得するAPI (URL: /api/v1/admin/users)
-    pass
+def admin_get_users():
+    # nextPageToken が存在しなければ、戻り値は None になるので、Noneは書かなくても良い。
+    page_token = request.args.get('nextPageToken', None)
 
-@admin_users_bp.post('')
+    # max_resultsで取得件数を10件に指定。page_tokenがあれば、その続きから取得する
+    # page_tokenは、Firebaseが生成する、非常に長い暗号化されたような文字列
+    page = auth.list_users(max_results=10, page_token=page_token)
+
+    # pageの内容が何もない場合、つまり要素数が0の場合には、空のリストが返る
+    users_list = [AdminReadFirebaseUser.model_validate(user).model_dump() for user in page]
 
 
-@admin_users_bp.delete('/<user_id>')
+    response = {
+        'users': users_list,
+        'nextPageToken': page.next_page_token or None # 空文字列の場合もNoneに統一
+    }
+    return jsonify(response), 200
+
+
+@admin_users_bp.get('/<str:uid>')
 @login_required
 @admin_required
-def delete_user(user_id):
-    # 特定のユーザーを削除するAPI (URL: /api/v1/admin/users/abc)
-    pass
+def get_user_details(uid):
+    user = auth.get_user(uid)
+
+    user_data = AdminReadFirebaseUser.model_validate(user).model_dump()
+
+    user_profile = db.session.get(UserProfile, uid)
+    user_profile_data = {}
+    if user_profile:
+        # user_profileが存在する場合のみ、Pydanticで変換して辞書にする
+        user_profile_data = ReadUserProfile.model_validate(user_profile).model_dump()
+
+    # 3. 2つの辞書をマージする
+    # {**A, **B} と書くことで、AとBのキーと値をすべて含む新しい辞書が作成される
+    merged_data = {**user_data, **user_profile_data}
+
+    return jsonify(merged_data), 200
+
+
+@admin_users_bp.post('/change-disable')
+@require_uid_in_payload
+@login_required
+@admin_required
+def admin_change_user_disable(uid):
+    # 3. uidを使ってユーザー情報を取得
+    user = auth.get_user(uid)
+
+    auth.update_user(uid, disabled=not user.disabled)
+
+    return jsonify({
+        'uid': uid,
+        'disabled': not user.disabled
+    }), 200
+
+
+@admin_users_bp.post('/change-role')
+@require_uid_in_payload
+@login_required
+@admin_required
+def admin_change_user_role(uid):
+
+    user = auth.get_user(uid)
+
+    # 1. custom_claims 辞書から現在の 'admin' 状態を取得 (存在しない場合は False)
+    current_is_admin = user.custom_claims.get('is_admin', False)
+
+    #    第一引数: uid, 第二引数: 更新したいクレームをすべて含んだ辞書
+    auth.set_custom_user_claims(uid, {'is_admin': not current_is_admin})
+
+    # 成功レスポンスとして、更新後の状態を返す
+    return jsonify({
+        'uid': uid,
+        'is_admin': not current_is_admin # フロントエンドの命名規則に合わせてキャメルケースにすることも
+    }), 200
+
+
+@admin_users_bp.delete('/delete-user')
+@require_uid_in_payload
+@login_required
+@admin_required
+def delete_user(uid):
+
+    user_profile = db.session.get(UserProfile, uid)
+    if user_profile:
+        db.session.delete(user_profile)
+        db.session.flush()
+    # 存在しない場合は何もしないでOK。最終的な目標はユーザーが消えることだから。
+    auth.delete_user(uid)
+    db.session.commit()
+    return jsonify({}), 204
+
+
+@admin_users_bp.errorhandler(auth.UserNotFoundError)
+def handle_user_not_found(error):
+    db.session.rollback()
+    current_app.logger.warning(f"Firebase user not found: {error}")
+    return error_response(code='not_found', message='The specified user was not found.', status=404)
+
+@admin_users_bp.errorhandler(auth.AuthError)
+def handle_firebase_auth_error(error):
+    db.session.rollback()
+    current_app.logger.error(f"Firebase Auth Error: {error}")
+    return error_response(code='auth_error', message='An authentication error occurred with Firebase.', status=500)
+
+@admin_users_bp.errorhandler(SQLAlchemyError)
+def handle_database_error(error):
+    db.session.rollback()
+    current_app.logger.error(f"Database Error: {error}")
+    return error_response(code='database_error', message='A database error occurred.', status=500)
+
+# 最も一般的なエラーとして最後に定義
+@admin_users_bp.errorhandler(Exception)
+def handle_unexpected_error(error):
+    db.session.rollback()
+    current_app.logger.error(f"An unexpected error occurred: {error}")
+    return error_response(code='internal_server_error', message='An internal server error occurred.', status=500)
+
+
+"""
+[ auth.AuthErrorの主なサブクラス ]
+
+auth.EmailAlreadyExistsError: create_user()やupdate_user()を呼び出す際に指定したメールアドレスが、既存のユーザーによって既に使用されている場合に発生します。[1][2]
+
+auth.PhoneNumberAlreadyExistsError:create_user()やupdate_user()で指定した電話番号が、既に他のユーザーに使用されている場合に発生します。
+
+auth.UidAlreadyExistsError: create_user()を呼び出す際に指定したuidが、既存のユーザーによって既に使用されている場合に発生します。[3]
+
+auth.EmailNotFoundError: get_user_by_email()を呼び出した際に、指定されたメールアドレスを持つユーザーが存在しない場合に発生します。
+
+auth.UserNotFoundError: get_user()、update_user()、delete_user()などで指定されたuidを持つユーザーが存在しない場合に発生します。
+
+auth.ExpiredIdTokenError: verify_id_token()で検証したIDトークンの有効期限が切れている場合に発生します。[4]
+
+auth.RevokedIdTokenError: IDトークンが無効にされている（例：ユーザーのセッションがリセットされた）場合に発生します。[4]
+
+auth.InvalidIdTokenError: IDトークンの形式が正しくない、または署名が無効であるなど、トークン自体に問題がある場合に発生します。[4]
+
+auth.ExpiredSessionCookieError: verify_session_cookie()で検証したセッションクッキーの有効期限が切れている場合に発生します。[5]
+
+auth.RevokedSessionCookieError: セッションクッキーが無効にされている場合に発生します。[5]
+
+auth.InvalidSessionCookieError: セッションクッキーの形式が正しくない場合に発生します。
+
+auth.InsufficientPermissionError: Admin SDKの初期化に使用された認証情報（サービスアカウント）に、要求された操作を実行するための十分な権限がない場合に発生します。[1][3]
+
+auth.CertificateFetchError: IDトークンやセッションクッキーを検証するために必要な公開鍵証明書の取得に失敗した場合に発生します。[4]
+
+
+これらの具体的なエラーを個別にハンドルしたい場合は、@admin_users_bp.errorhandler()デコレータをそれぞれのエラークラスに対して追加することで、より詳細なエラーハンドリングを実装できます。
+"""
+

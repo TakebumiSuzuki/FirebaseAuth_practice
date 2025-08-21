@@ -4,8 +4,7 @@ from datetime import date
 from enums import Gender
 
 
-# バリデーションが成功した場合、入力をGender.MALEのようなEnumオブジェクトに変換してくれる。
-class UserProfileBase(BaseModel):
+class PublicUserProfile(BaseModel):
     id: Annotated[str, Field(description="The unique identifier for the user (Firebase UID).")]
     name: Annotated[str, Field(description="The user's display name.")]
     birthday: Annotated[date | None, Field(description="The user's date of birth in ISO 8601 format (YYYY-MM-DD).")]
@@ -14,12 +13,15 @@ class UserProfileBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PublicUserProfile(UserProfileBase):
-    pass
 
-
-class ReadUserProfile(UserProfileBase):
+class ReadUserProfile(BaseModel):
+    id: Annotated[str, Field(description="The unique identifier for the user (Firebase UID).")]
+    name: Annotated[str, Field(description="The user's display name.")]
+    birthday: Annotated[date | None, Field(description="The user's date of birth in ISO 8601 format (YYYY-MM-DD).")]
+    gender: Annotated[Gender | None, Field(description="The user's gender.")]
     is_admin: Annotated[bool, Field(description="A boolean flag indicating if the user has administrator privileges.")]
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UpdateUserProfile(BaseModel):
