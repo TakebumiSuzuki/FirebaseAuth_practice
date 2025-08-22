@@ -6,7 +6,7 @@ from enums import Gender
 
 class PublicUserProfile(BaseModel):
     id: Annotated[str, Field(description="The unique identifier for the user (Firebase UID).")]
-    name: Annotated[str, Field(description="The user's display name.")]
+    display_name: Annotated[str, Field(description="The user's display name.")]
     birthday: Annotated[date | None, Field(description="The user's date of birth in ISO 8601 format (YYYY-MM-DD).")]
     gender: Annotated[Gender | None, Field(description="The user's gender.")]
 
@@ -16,7 +16,7 @@ class PublicUserProfile(BaseModel):
 
 class ReadUserProfile(BaseModel):
     id: Annotated[str, Field(description="The unique identifier for the user (Firebase UID).")]
-    name: Annotated[str, Field(description="The user's display name.")]
+    display_name: Annotated[str, Field(description="The user's display name.")]
     birthday: Annotated[date | None, Field(description="The user's date of birth in ISO 8601 format (YYYY-MM-DD).")]
     gender: Annotated[Gender | None, Field(description="The user's gender.")]
     is_admin: Annotated[bool, Field(description="A boolean flag indicating if the user has administrator privileges.")]
@@ -25,6 +25,7 @@ class ReadUserProfile(BaseModel):
 
 
 class UpdateUserProfile(BaseModel):
+    display_name: Annotated[str, Field(description="The user's display name.")]
     birthday: Annotated[date | None, Field(
         description="The user's date of birth in ISO 8601 format (YYYY-MM-DD)."
     )]

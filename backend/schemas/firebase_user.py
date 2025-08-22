@@ -69,6 +69,8 @@ Firebase Admin SDK for Python (firebase-admin)が返すユーザーデータはU
 
 """
 FB authからのレスポンスの形式はこんな感じになっている。
+[重要]これは、auth.get_user() などでサーバーから直接ユーザー情報を取得した際のもの。UserRecord オブジェクト。
+で、これは、auth.verify_id_token() が返すデコード済みIDトークンとは構造が多少異なる。
 {
   "uid": "some-uid",
   "email": "user@example.com",

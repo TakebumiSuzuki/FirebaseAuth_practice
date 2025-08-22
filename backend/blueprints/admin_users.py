@@ -1,14 +1,15 @@
 from functools import wraps
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, g
 from firebase_admin import auth
 from sqlalchemy.exc import SQLAlchemyError
 from backend.schemas.user_profile import ReadUserProfile
 from backend.schemas.firebase_user import AdminReadFirebaseUser
 
-from backend.decorators import login_required, admin_required
+from backend.extensions import db
+from backend.decorators import login_required, admin_required, payload_required
 from backend.utils import error_response
 from backend.models.user_profile import UserProfile
-from backend.extensions import db
+
 
 
 # from datetime import datetime, timezone
@@ -21,22 +22,18 @@ from backend.extensions import db
 
 admin_users_bp = Blueprint('admin_users', __name__, url_prefix='/api/v1/admin/users')
 
-def require_uid_in_payload(func):
+def uid_required_in_payload(func):
     @wraps(func)
-    def decorated_func(*args, **kwargs):
-        payload = request.get_json()
-        if not payload:
-            return error_response(code='bad_request', message='Request body is missing or not JSON.', status=400)
-
-        # 2. .get() を使って安全にuidを取得
-        uid = payload.get('uid')
+    def wrapper(*args, **kwargs):
+        if not hasattr(g, 'payload') or not g.payload:
+            raise RuntimeError("g.payload must be set by payload_required before admin_required")
+        # get() を使って安全にuidを取得
+        uid = g.payload.get('uid')
         if not uid:
             return error_response(code='bad_request', message='User ID (uid) is missing in the payload.', status=400)
-        kwargs['uid'] = uid
-
+        g.uid = uid
         return func(*args, **kwargs)
-
-    return decorated_func
+    return wrapper
 
 
 @admin_users_bp.get('')
@@ -52,7 +49,6 @@ def admin_get_users():
 
     # pageの内容が何もない場合、つまり要素数が0の場合には、空のリストが返る
     users_list = [AdminReadFirebaseUser.model_validate(user).model_dump() for user in page]
-
 
     response = {
         'users': users_list,
@@ -70,12 +66,14 @@ def get_user_details(uid):
     user_data = AdminReadFirebaseUser.model_validate(user).model_dump()
 
     user_profile = db.session.get(UserProfile, uid)
-    user_profile_data = {}
-    if user_profile:
-        # user_profileが存在する場合のみ、Pydanticで変換して辞書にする
-        user_profile_data = ReadUserProfile.model_validate(user_profile).model_dump()
 
-    # 3. 2つの辞書をマージする
+    if not user_profile:
+        # データ不整合：認証ユーザーが存在するのにプロファイルがない
+        # これはサーバー側の問題なので、RuntimeErrorを発生させる
+        raise RuntimeError(f"CRITICAL: User Profile missing for authenticated Firebase user: {uid}")
+
+    user_profile_data = ReadUserProfile.model_validate(user_profile).model_dump()
+
     # {**A, **B} と書くことで、AとBのキーと値をすべて含む新しい辞書が作成される
     merged_data = {**user_data, **user_profile_data}
 
@@ -83,14 +81,15 @@ def get_user_details(uid):
 
 
 @admin_users_bp.post('/change-disable')
-@require_uid_in_payload
 @login_required
 @admin_required
-def admin_change_user_disable(uid):
-    # 3. uidを使ってユーザー情報を取得
+@payload_required
+@uid_required_in_payload
+def admin_change_user_disable():
+    uid = g.uid
     user = auth.get_user(uid)
 
-    auth.update_user(uid, disabled=not user.disabled)
+    auth.update_user(uid, disabled= not user.disabled)
 
     return jsonify({
         'uid': uid,
@@ -99,11 +98,12 @@ def admin_change_user_disable(uid):
 
 
 @admin_users_bp.post('/change-role')
-@require_uid_in_payload
 @login_required
 @admin_required
-def admin_change_user_role(uid):
-
+@payload_required
+@uid_required_in_payload
+def admin_change_user_role():
+    uid = g.uid
     user = auth.get_user(uid)
 
     # 1. custom_claims 辞書から現在の 'admin' 状態を取得 (存在しない場合は False)
@@ -120,12 +120,14 @@ def admin_change_user_role(uid):
 
 
 @admin_users_bp.delete('/delete-user')
-@require_uid_in_payload
 @login_required
 @admin_required
-def delete_user(uid):
-
+@payload_required
+@uid_required_in_payload
+def delete_user():
+    uid = g.uid
     user_profile = db.session.get(UserProfile, uid)
+
     if user_profile:
         db.session.delete(user_profile)
         db.session.flush()
@@ -141,6 +143,7 @@ def handle_user_not_found(error):
     current_app.logger.warning(f"Firebase user not found: {error}")
     return error_response(code='not_found', message='The specified user was not found.', status=404)
 
+# Firebaseとの通信エラーなどが発生した場合
 @admin_users_bp.errorhandler(auth.AuthError)
 def handle_firebase_auth_error(error):
     db.session.rollback()
