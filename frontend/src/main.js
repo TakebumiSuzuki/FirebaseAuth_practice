@@ -9,6 +9,7 @@ import { createPinia } from 'pinia'
 // 非同期なので、これら認証の確認を任せつつ、まず、このjsファイルの最後まで同期的に貫徹する。
 import { auth } from '@/firebase'
 import  { useAuthStore } from '@/stores/useAuthStore'
+import router from '@/routes'
 
 
 const app = createApp(App)
@@ -16,6 +17,7 @@ const app = createApp(App)
 const pinia = createPinia()
 
 app.use(pinia)
+app.use(router)
 
 
 let isAppMounted = false

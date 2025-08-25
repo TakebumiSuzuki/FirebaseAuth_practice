@@ -4,6 +4,7 @@ from backend.config import DevelopmentConfig, ProductionConfig, TestingConfig
 # from blueprints.admin import admin_bp
 from backend.blueprints.auth import auth_bp
 from backend.blueprints.users import users_bp
+from backend.blueprints.admin_users import admin_users_bp
 from backend.blueprints.test import test_bp
 from backend.errors import setup_errorhandlers
 
@@ -49,6 +50,7 @@ def create_app(config_class=DevelopmentConfig):
     # app.register_blueprint(admin_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
+    app.register_blueprint(admin_users_bp)
     app.register_blueprint(test_bp)
 
     return app

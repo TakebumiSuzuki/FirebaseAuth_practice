@@ -74,7 +74,7 @@ FB authからのレスポンスの形式はこんな感じになっている。
 {
   "uid": "some-uid",
   "email": "user@example.com",
-  "display_name": "Taro Yamada",
+  "displayName": "Taro Yamada",
   "photo_url": "https://example.com/photo.jpg",
   "phone_number": "+819012345678",
   "email_verified": true,
