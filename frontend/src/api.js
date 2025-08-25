@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 export const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api', // Flaskサーバーのアドレス
+  // baseURL: 'http://localhost:5000', // Flaskサーバーのアドレス
 });
 
 

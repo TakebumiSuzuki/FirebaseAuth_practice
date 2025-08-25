@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Annotated
 from datetime import date
-from enums import Gender
+from backend.enums import Gender
 
 
 class PublicUserProfile(BaseModel):

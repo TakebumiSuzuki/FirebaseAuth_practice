@@ -120,6 +120,23 @@ def payload_required(f):
     return wrapper
 
 
+# adminのcrud操作で任意のユーザーを操作する時に使う
+def target_user_required_in_payload(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not hasattr(g, 'payload') or not g.payload:
+            raise RuntimeError("g.payload must be set by payload_required before admin_required")
+        # get() を使って安全にuidを取得
+        target_uid = g.payload.get('uid')
+        if not target_uid:
+            return error_response(code='bad_request', message='User ID (uid) is missing in the payload.', status=400)
+        target_user = auth.get_user(target_uid)
+        # ここで、target_userは firebase_admin.auth.UserRecord 型で、target_user.uidのようにドットで属性取得可能
+        g.target_user = target_user
+        return func(*args, **kwargs)
+    return wrapper
+
+
 
 def admin_required(f):
     @wraps(f)

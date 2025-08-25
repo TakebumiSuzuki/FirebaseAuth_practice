@@ -1,7 +1,18 @@
-<script seupt>
+<script setup>
+  import { onMounted, ref } from 'vue'
   import { auth } from "@/firebase";
   import { signOut } from "firebase/auth"
+  import { useAuthStore } from '@/stores/useAuthStore'
   // import axios from "axios"
+
+
+  // authStoreを宣言
+  const authStore = ref(null)
+
+  onMounted(() => {
+    // コンポーネントがマウントされてからストアを取得
+    authStore.value = useAuthStore()
+  })
 
   const handleLogout = async()=>{
     try {
@@ -38,6 +49,8 @@
     <div class="flex justify-between items-center h-full">
       <h1 class="text-4xl">Site Title</h1>
       <div class="flex itmes-center gap-6">
+        <p v-if="authStore?.isAdmin">こんにちは管理者さん</p>
+        <p v-else>こんにちは一般ユーザーさん</p>
         <button type="button" @click="handleLogout">
           LOGOUT
         </button>

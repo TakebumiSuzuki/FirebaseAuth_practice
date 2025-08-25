@@ -1,4 +1,3 @@
-from functools import wraps
 from flask import Blueprint, request, jsonify, current_app, g
 from firebase_admin import auth
 from sqlalchemy.exc import SQLAlchemyError
@@ -6,8 +5,7 @@ from backend.schemas.user_profile import ReadUserProfile
 from backend.schemas.firebase_user import AdminReadFirebaseUser
 
 from backend.extensions import db
-from backend.decorators import login_required, admin_required, payload_required
-from backend.utils import error_response
+from backend.decorators import login_required, admin_required, payload_required, target_user_required_in_payload
 from backend.models.user_profile import UserProfile
 
 
@@ -21,19 +19,6 @@ from backend.models.user_profile import UserProfile
 #     return datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc).isoformat()
 
 admin_users_bp = Blueprint('admin_users', __name__, url_prefix='/api/v1/admin/users')
-
-def uid_required_in_payload(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if not hasattr(g, 'payload') or not g.payload:
-            raise RuntimeError("g.payload must be set by payload_required before admin_required")
-        # get() を使って安全にuidを取得
-        uid = g.payload.get('uid')
-        if not uid:
-            return error_response(code='bad_request', message='User ID (uid) is missing in the payload.', status=400)
-        g.uid = uid
-        return func(*args, **kwargs)
-    return wrapper
 
 
 @admin_users_bp.get('')
@@ -84,16 +69,14 @@ def get_user_details(uid):
 @login_required
 @admin_required
 @payload_required
-@uid_required_in_payload
+@target_user_required_in_payload
 def admin_change_user_disable():
-    uid = g.uid
-    user = auth.get_user(uid)
 
-    auth.update_user(uid, disabled= not user.disabled)
+    auth.update_user(g.target_user.uid, disabled = not g.target_user.disabled)
 
     return jsonify({
-        'uid': uid,
-        'disabled': not user.disabled
+        'uid': g.target_user.uid,
+        'disabled': not g.target_user.disabled
     }), 200
 
 
@@ -101,20 +84,17 @@ def admin_change_user_disable():
 @login_required
 @admin_required
 @payload_required
-@uid_required_in_payload
+@target_user_required_in_payload
 def admin_change_user_role():
-    uid = g.uid
-    user = auth.get_user(uid)
 
     # 1. custom_claims 辞書から現在の 'admin' 状態を取得 (存在しない場合は False)
-    current_is_admin = user.custom_claims.get('is_admin', False)
+    current_is_admin = g.target_user.custom_claims.get('is_admin', False)
 
     #    第一引数: uid, 第二引数: 更新したいクレームをすべて含んだ辞書
-    auth.set_custom_user_claims(uid, {'is_admin': not current_is_admin})
+    auth.set_custom_user_claims(g.target_user.uid, {'is_admin': not current_is_admin})
 
-    # 成功レスポンスとして、更新後の状態を返す
     return jsonify({
-        'uid': uid,
+        'uid': g.target_user.uid,
         'is_admin': not current_is_admin # フロントエンドの命名規則に合わせてキャメルケースにすることも
     }), 200
 
@@ -123,45 +103,24 @@ def admin_change_user_role():
 @login_required
 @admin_required
 @payload_required
-@uid_required_in_payload
+@target_user_required_in_payload
 def delete_user():
-    uid = g.uid
-    user_profile = db.session.get(UserProfile, uid)
+    user_profile = db.session.get(UserProfile, g.target_user.uid)
 
     if user_profile:
         db.session.delete(user_profile)
-        db.session.flush()
     # 存在しない場合は何もしないでOK。最終的な目標はユーザーが消えることだから。
-    auth.delete_user(uid)
-    db.session.commit()
+    auth.delete_user(g.target_user.uid)
+    try:
+        db.session.commit()
+    except SQLAlchemyError as e:
+        current_app.logger.critical(f"CRITICAL: Data inconsistency detected for user UID '{g.target_user.uid}'. "
+    f"The Firebase user was deleted, but the corresponding database profile could not be committed. "
+    f"Manual cleanup of the UserProfile is required. DB Error: {e}")
+        raise
+
     return jsonify({}), 204
 
-
-@admin_users_bp.errorhandler(auth.UserNotFoundError)
-def handle_user_not_found(error):
-    db.session.rollback()
-    current_app.logger.warning(f"Firebase user not found: {error}")
-    return error_response(code='not_found', message='The specified user was not found.', status=404)
-
-# Firebaseとの通信エラーなどが発生した場合
-@admin_users_bp.errorhandler(auth.AuthError)
-def handle_firebase_auth_error(error):
-    db.session.rollback()
-    current_app.logger.error(f"Firebase Auth Error: {error}")
-    return error_response(code='auth_error', message='An authentication error occurred with Firebase.', status=500)
-
-@admin_users_bp.errorhandler(SQLAlchemyError)
-def handle_database_error(error):
-    db.session.rollback()
-    current_app.logger.error(f"Database Error: {error}")
-    return error_response(code='database_error', message='A database error occurred.', status=500)
-
-# 最も一般的なエラーとして最後に定義
-@admin_users_bp.errorhandler(Exception)
-def handle_unexpected_error(error):
-    db.session.rollback()
-    current_app.logger.error(f"An unexpected error occurred: {error}")
-    return error_response(code='internal_server_error', message='An internal server error occurred.', status=500)
 
 
 """

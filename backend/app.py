@@ -5,6 +5,8 @@ from backend.config import DevelopmentConfig, ProductionConfig, TestingConfig
 from backend.blueprints.auth import auth_bp
 from backend.blueprints.users import users_bp
 from backend.blueprints.test import test_bp
+from backend.errors import setup_errorhandlers
+
 import firebase_admin
 from firebase_admin import credentials
 
@@ -41,6 +43,8 @@ def create_app(config_class=DevelopmentConfig):
 
     db.init_app(app)
     migrate.init_app(app, db)
+
+    setup_errorhandlers(app)
 
     # app.register_blueprint(admin_bp)
     app.register_blueprint(auth_bp)

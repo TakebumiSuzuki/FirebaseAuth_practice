@@ -18,7 +18,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "5001:5000"
+      - "5000:5000"
     volumes:
       - ./backend:/backend
     # pg_isready コマンドが成功を返してから backend が起動開始
