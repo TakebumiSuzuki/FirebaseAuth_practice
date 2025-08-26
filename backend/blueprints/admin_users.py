@@ -3,7 +3,7 @@ from firebase_admin import auth
 from sqlalchemy.exc import SQLAlchemyError
 from backend.schemas.user_profile import ReadUserProfile
 from backend.schemas.firebase_user import AdminReadFirebaseUser
-
+from pydantic import ValidationError
 from backend.extensions import db
 from backend.decorators import login_required, admin_required, payload_required, target_user_required_in_payload
 from backend.models.user_profile import UserProfile
@@ -32,20 +32,8 @@ def admin_get_users():
     # page_tokenは、Firebaseが生成する、非常に長い暗号化されたような文字列
     page = auth.list_users(max_results=10, page_token=page_token)
 
-    # pageの内容が何もない場合、つまり要素数が0の場合には、空のリストが返る
     users_list = [
-        AdminReadFirebaseUser(
-            uid=user.uid,
-            email=user.email,
-            display_name=user.display_name,
-            phone_number=user.phone_number,
-            custom_claims=user.custom_claims or {},  # None の場合は空 dict
-            disabled=user.disabled,
-            user_metadata={
-                "creation_timestamp": user.user_metadata.creation_timestamp,
-                "last_sign_in_timestamp": user.user_metadata.last_sign_in_timestamp
-            }
-        ).model_dump()
+        AdminReadFirebaseUser.model_validate(user).model_dump()
         for user in page.users
     ]
 
@@ -100,10 +88,12 @@ def admin_change_user_disable():
 @payload_required
 @target_user_required_in_payload
 def admin_change_user_role():
+    print(g.target_user)
 
-    # 1. custom_claims 辞書から現在の 'admin' 状態を取得 (存在しない場合は False)
-    current_is_admin = g.target_user.custom_claims.get('is_admin', False)
+    custom_claims = g.target_user.custom_claims or {}
 
+    current_is_admin = custom_claims.get('is_admin', False)
+    print(current_is_admin)
     #    第一引数: uid, 第二引数: 更新したいクレームをすべて含んだ辞書
     auth.set_custom_user_claims(g.target_user.uid, {'is_admin': not current_is_admin})
 

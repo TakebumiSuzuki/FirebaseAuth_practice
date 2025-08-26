@@ -2,7 +2,7 @@
   import { reactive, ref } from 'vue'
   import { auth } from "@/firebase";
   import { signInWithEmailAndPassword  } from "firebase/auth";
-  
+  import { useRouter } from 'vue-router'
 
   const formValues = reactive({
     email: '',
@@ -10,6 +10,7 @@
   })
   const errorMessage = ref(null)
   const successMessage = ref(null)
+  const router = useRouter()
 
   const handleSubmit = async ()=>{
     successMessage.value = null
@@ -27,6 +28,7 @@
       console.log(userCredential.user)
 
       successMessage.value = 'Successfully you have logged in'
+      router.push({name: 'me-details'})
 
 
     }catch(error){
@@ -94,10 +96,14 @@
 
         <button
           type="submit"
-          class="px-8 py-2 rounded-xl hover:bg-purple-300/30 hover:-translate-y-0.5 transition border-2 border-gray-400/80"
+          class="px-8 py-2 rounded-xl hover:bg-purple-300/30 hover:-translate-y-0.5 transition border-2 border-gray-400/80 block"
         >
           Submit
         </button>
+
+        <RouterLink :to="{name: 'register'}" class="text-right block">
+          Create Account
+        </RouterLink>
       </form>
 
 

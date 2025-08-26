@@ -18,6 +18,8 @@ class Metadata(BaseModel):
     # last_sign_in_timestampはユーザーが一度もログインしていない場合 None になる可能性があるため、| None を追加するのが安全です。
     last_sign_in_timestamp: Annotated[datetime | None, Field(description="The date the user last signed in.")]
 
+    model_config = ConfigDict(from_attributes=True)
+
     @field_validator('creation_timestamp', 'last_sign_in_timestamp', mode='before')
     @classmethod
     def convert_ms_to_datetime(cls, v: int | float | None) -> datetime | None:
@@ -28,7 +30,6 @@ class Metadata(BaseModel):
         return datetime.fromtimestamp(v / 1000, tz=timezone.utc)
 
 
-# Firebaseユーザーの基本情報のスキーマを定義
 class BaseReadFirebaseUser(BaseModel):
     uid: Annotated[str, Field(description="The user's unique identifier from Firebase.")]
     email: Annotated[EmailStr | None, Field(description="The user's email address.")]
@@ -46,7 +47,8 @@ class UserReadFirebaseUser(BaseReadFirebaseUser):
 
 class AdminReadFirebaseUser(BaseReadFirebaseUser):
     disabled: Annotated[bool, Field(description="A flag indicating if the user account is disabled.")]
-    user_metadata: Annotated[Metadata, Field(description='User metadata.')]
+    # user_metadata: Annotated[Metadata, Field(description='User metadata.')]
+    user_metadata: Annotated[Metadata | None, Field(description='User metadata.')]
 
 class UserUpdateFirebaseUser(BaseModel):
     email: Annotated[EmailStr | None, Field(description="The user's email address.")]
@@ -74,7 +76,7 @@ FB authからのレスポンスの形式はこんな感じになっている。
 {
   "uid": "some-uid",
   "email": "user@example.com",
-  "displayName": "Taro Yamada",
+  "display_name": "Taro Yamada",
   "photo_url": "https://example.com/photo.jpg",
   "phone_number": "+819012345678",
   "email_verified": true,

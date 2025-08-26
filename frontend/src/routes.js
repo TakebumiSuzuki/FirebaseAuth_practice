@@ -1,6 +1,9 @@
 
 import { createRouter, createWebHistory } from 'vue-router'
 import AdminUsers from '@/views/AdminUsers.vue'
+import LoginView from '@/views/LoginView.vue'
+import RegisterView from '@/views/RegisterView.vue'
+import MeDetails from '@/views/MeDetails.vue'
 
 const routes = [
 
@@ -10,6 +13,26 @@ const routes = [
     component: AdminUsers,
     meta: {}
   },
+  {
+    path: '/auth/register',
+    name: 'register',
+    component: RegisterView,
+    meta: {}
+  },
+  {
+    path: '/auth/login',
+    name: 'login',
+    component: LoginView,
+    meta: {}
+
+  },
+  {
+    path: '/',
+    name: 'me-details',
+    component: MeDetails,
+    meta: {}
+  }
+
 
 ]
 

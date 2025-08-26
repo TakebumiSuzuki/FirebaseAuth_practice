@@ -3,7 +3,9 @@
   import { auth } from "@/firebase";
   import { createUserWithEmailAndPassword, updateProfile, deleteUser } from "firebase/auth";
   import { apiClient } from '@/api'
+  import { useRouter } from 'vue-router'
 
+  const router = useRouter()
   const username = ref('')
   const email = ref('');
   const password = ref('');
@@ -51,15 +53,15 @@
     try {
       // 以下のコードは FB authサーバーのユーザー情報を変えるだけで、
       // IDトークンにはすぐ反映されない。次回リフレッシュ時にこのdisplayNameがIDトークンに反映される
-      await updateProfile(
-        userCredential.user,
-        { displayName: username.value }
-      );
-      await apiClient.post(
-        '/api/v1/auth/create-user-profile',
-        { display_name: username.value }
-      );
+      await updateProfile(userCredential.user, { displayName: username.value });
+      await apiClient.post('/api/v1/auth/create-user-profile', { display_name: username.value });
+
       successMessage.value = "Registration successful!";
+      const user = auth.currentUser
+      const idTokenResult = await user.getIdTokenResult(true);
+      console.log(idTokenResult)
+
+      router.push('/')
       console.log("User registered successfully:", userCredential.user);
 
     } catch (error) {
@@ -101,6 +103,7 @@
         Register
       </h1>
       <form @submit.prevent="register">
+
         <div class="mb-8">
           <label
             for="username"
@@ -155,6 +158,9 @@
       <div v-if="errorMessage" class="mt-4 p-4 bg-red-200 text-red-800 rounded-xl">
         {{ errorMessage }}
       </div>
+      <RouterLink :to="{name: 'login'}" class="text-right block">Go Login Page</RouterLink>
+
     </div>
+
   </div>
 </template>

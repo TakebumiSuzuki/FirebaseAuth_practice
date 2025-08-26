@@ -1,4 +1,6 @@
 import { createApp } from 'vue'
+// import されているすべての関連ファイル（ヘッダーコンポーネントなど）のコードがメモリに読み込まれます
+// しかし設計図（定義）を読み込んでいるだけで、<script setup> の中のコードはまだ実行されません。
 import App from '@/App.vue'
 import { createPinia } from 'pinia'
 // auth オブジェクトがインポートされた時点で、Firebase Auth が自動的に以下を非同期で行います：
