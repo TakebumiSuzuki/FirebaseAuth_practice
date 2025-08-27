@@ -7,9 +7,8 @@
   // import axios from "axios"
 
   const router = useRouter()
-  const authStore = ref(null)
-
-  authStore.value = useAuthStore()
+  // authStoreの作成は同期的に行われる
+  const authStore = useAuthStore();
 
   const handleLogout = async()=>{
     try {
@@ -18,7 +17,7 @@
       // signOut関数はAuthサーバーにリクエストを送らず、クライアントサイドだけで完結する処理
       // GmailやNetflixはこれだけでログアウトとしている。
       await signOut(auth);
-      router.push("login");
+      router.push({name:'login'});
 
     } catch (error) {
       console.error("ログアウトエラー:", error);
@@ -45,10 +44,13 @@
       <h1 class="text-4xl">Site Title</h1>
 
       <div class="flex itmes-center gap-6">
-        <p v-if="authStore?.isAdmin">こんにちは管理者さん</p>
-        <p v-else-if="authStore?.isLoggedin">こんにちは一般ユーザーさん</p>
-        <p v-else >あなたはログインしてません</p>
+        <RouterLink :to="{name: 'me-details'}">
+          <p v-if="authStore.isAdmin">こんにちは管理者さん</p>
+          <p v-else-if="authStore.isLoggedin">こんにちは一般ユーザーさん</p>
+          <p v-else >あなたはログインしてません</p>
+        </RouterLink>
         <button
+          v-if="authStore.isLoggedin"
           type="button"
           class="hover:cursor-pointer"
           @click="handleLogout"

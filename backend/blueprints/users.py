@@ -19,7 +19,9 @@ users_bp = Blueprint('users', __name__, url_prefix='/api/v1/users')
 @user_profile_required
 def get_me():
     user_profile = g.user_profile
+    # print('まずはここ')　ここでエラーが起こっている
     user_dic = UserReadFirebaseUser.model_validate(g.user).model_dump()
+    print('次はここ')
     user_profile_dic = PublicUserProfile.model_validate(user_profile).model_dump()
     return jsonify({**user_dic, **user_profile_dic}), 200
 

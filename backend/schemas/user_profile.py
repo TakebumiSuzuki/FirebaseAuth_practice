@@ -5,7 +5,7 @@ from backend.enums import Gender
 
 
 class PublicUserProfile(BaseModel):
-    id: Annotated[str, Field(description="The unique identifier for the user (Firebase UID).")]
+    uid: Annotated[str, Field(description="The unique identifier for the user (Firebase UID).")]
     display_name: Annotated[str, Field(description="The user's display name.")]
     birthday: Annotated[date | None, Field(description="The user's date of birth in ISO 8601 format (YYYY-MM-DD).")]
     gender: Annotated[Gender | None, Field(description="The user's gender.")]
@@ -15,7 +15,7 @@ class PublicUserProfile(BaseModel):
 
 
 class ReadUserProfile(BaseModel):
-    id: Annotated[str, Field(description="The unique identifier for the user (Firebase UID).")]
+    uid: Annotated[str, Field(description="The unique identifier for the user (Firebase UID).")]
     display_name: Annotated[str, Field(description="The user's display name.")]
     birthday: Annotated[date | None, Field(description="The user's date of birth in ISO 8601 format (YYYY-MM-DD).")]
     gender: Annotated[Gender | None, Field(description="The user's gender.")]

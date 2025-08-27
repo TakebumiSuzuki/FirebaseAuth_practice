@@ -67,7 +67,7 @@ def get_user_details(uid):
     return jsonify(merged_data), 200
 
 
-@admin_users_bp.post('/change-disable')
+@admin_users_bp.post('/change-disabled')
 @login_required
 @admin_required
 @payload_required
@@ -88,14 +88,24 @@ def admin_change_user_disable():
 @payload_required
 @target_user_required_in_payload
 def admin_change_user_role():
-    print(g.target_user)
 
     custom_claims = g.target_user.custom_claims or {}
 
     current_is_admin = custom_claims.get('is_admin', False)
-    print(current_is_admin)
+
+    user_profile = db.session.get(UserProfile, g.target_user.uid)
+    user_profile.is_admin = not current_is_admin
+
     #    第一引数: uid, 第二引数: 更新したいクレームをすべて含んだ辞書
     auth.set_custom_user_claims(g.target_user.uid, {'is_admin': not current_is_admin})
+
+    try:
+        db.session.commit()
+    except SQLAlchemyError as e:
+        current_app.logger.critical(f"CRITICAL: Data inconsistency detected for user UID '{g.target_user.uid}'. "
+    f"The Firebase user is_admin field was changed, but the corresponding database profile is_admin could not be changed. "
+    f"Manual modification of the UserProfile is required. DB Error: {e}")
+        raise
 
     return jsonify({
         'uid': g.target_user.uid,
@@ -103,14 +113,15 @@ def admin_change_user_role():
     }), 200
 
 
-@admin_users_bp.delete('/delete-user')
+@admin_users_bp.post('/delete-user')
 @login_required
 @admin_required
 @payload_required
 @target_user_required_in_payload
 def delete_user():
+    print('ここです1')
     user_profile = db.session.get(UserProfile, g.target_user.uid)
-
+    print('ここです')
     if user_profile:
         db.session.delete(user_profile)
     # 存在しない場合は何もしないでOK。最終的な目標はユーザーが消えることだから。

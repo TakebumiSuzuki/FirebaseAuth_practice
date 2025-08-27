@@ -4,6 +4,7 @@ import AdminUsers from '@/views/AdminUsers.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import MeDetails from '@/views/MeDetails.vue'
+import AdminUserDetails from '@/views/AdminUserDetails.vue'
 
 const routes = [
 
@@ -11,6 +12,13 @@ const routes = [
     path:'/admin-users',
     name: 'admin-users',
     component: AdminUsers,
+    meta: {}
+  },
+  {
+    path:'/admin-user-details/:uid',
+    name: 'admin-user-details',
+    component: AdminUserDetails,
+    props: true,
     meta: {}
   },
   {
@@ -27,11 +35,11 @@ const routes = [
 
   },
   {
-    path: '/',
+    path: '/users/me',
     name: 'me-details',
     component: MeDetails,
     meta: {}
-  }
+  },
 
 
 ]
