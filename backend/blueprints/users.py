@@ -19,12 +19,11 @@ users_bp = Blueprint('users', __name__, url_prefix='/api/v1/users')
 @user_profile_required
 def get_me():
     user_profile = g.user_profile
-    # print('まずはここ')　ここでエラーが起こっている
-    user_dic = UserReadFirebaseUser.model_validate(g.user).model_dump()
-    print('次はここ')
+    # g.userは単にIDトークンの中身だから使わずに、サーバーからのユーザーデータを取得して使う。
+    fb_server_user = auth.get_user(g.user['uid'])
+    user_dic = UserReadFirebaseUser.model_validate(fb_server_user).model_dump()
     user_profile_dic = PublicUserProfile.model_validate(user_profile).model_dump()
     return jsonify({**user_dic, **user_profile_dic}), 200
-
 
 @users_bp.patch('/me')
 @login_required
@@ -44,14 +43,13 @@ def update_me():
             user_profile_updates[key] = value
 
     if user_profile_updates:
-        user_profile_data = UpdateUserProfile.model_validate(user_profile_updates).model_dump()
+        user_profile_data = UpdateUserProfile.model_validate(user_profile_updates).model_dump(exclude_unset=True)
         for key, value in user_profile_data.items():
             setattr(user_profile, key, value)
-
     try:
         if firebase_user_updates:
-            firebase_user_data = UserUpdateFirebaseUser.model_validate(firebase_user_updates).model_dump()
-            auth.update_user(uid, firebase_user_data)
+            firebase_user_data = UserUpdateFirebaseUser.model_validate(firebase_user_updates).model_dump(exclude_unset=True)
+            auth.update_user(uid, **firebase_user_data)
         db.session.commit()
         return '', 204
 

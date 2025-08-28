@@ -30,29 +30,29 @@ class Metadata(BaseModel):
         return datetime.fromtimestamp(v / 1000, tz=timezone.utc)
 
 
-class BaseReadFirebaseUser(BaseModel):
-    uid: Annotated[str, Field(description="The user's unique identifier from Firebase.")]
-    email: Annotated[EmailStr | None, Field(description="The user's email address.")]
-    display_name: Annotated[str | None, Field(description="The user's display name.")]
-    custom_claims: Annotated[CustomClaims | None, Field(description="User's custom claims.")]
-
+class UserReadFirebaseUser(BaseModel):
+    uid: str
+    email: EmailStr | None
+    display_name: str | None
+    user_metadata: Metadata
     # from_attributes=True を設定することで、auth.get_user(uid) のような
     # オブジェクトの属性 (user.uid, user.emailなど) からデータを読み込めるようになる
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserReadFirebaseUser(BaseReadFirebaseUser):
-    pass
+class AdminReadFirebaseUser(BaseModel):
+    uid: str
+    email: EmailStr | None
+    display_name: str | None
+    custom_claims: CustomClaims | None
+    disabled: bool
+    user_metadata: Metadata | None
 
-
-class AdminReadFirebaseUser(BaseReadFirebaseUser):
-    disabled: Annotated[bool, Field(description="A flag indicating if the user account is disabled.")]
-    # user_metadata: Annotated[Metadata, Field(description='User metadata.')]
-    user_metadata: Annotated[Metadata | None, Field(description='User metadata.')]
+    model_config = ConfigDict(from_attributes=True)
 
 class UserUpdateFirebaseUser(BaseModel):
-    email: Annotated[EmailStr | None, Field(description="The user's email address.")]
-    display_name: Annotated[str | None, Field(description="The user's display name.")]
+    email: EmailStr | None = None
+    display_name: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

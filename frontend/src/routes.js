@@ -5,6 +5,7 @@ import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import MeDetails from '@/views/MeDetails.vue'
 import AdminUserDetails from '@/views/AdminUserDetails.vue'
+import MeUpdate from '@/views/MeUpdate.vue'
 
 const routes = [
 
@@ -38,6 +39,12 @@ const routes = [
     path: '/users/me',
     name: 'me-details',
     component: MeDetails,
+    meta: {}
+  },
+  {
+    path: '/users/me-update',
+    name: 'me-update',
+    component: MeUpdate,
     meta: {}
   },
 

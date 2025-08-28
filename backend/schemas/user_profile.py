@@ -25,13 +25,9 @@ class ReadUserProfile(BaseModel):
 
 
 class UpdateUserProfile(BaseModel):
-    display_name: Annotated[str, Field(description="The user's display name.")]
-    birthday: Annotated[date | None, Field(
-        description="The user's date of birth in ISO 8601 format (YYYY-MM-DD)."
-    )]
-    gender: Annotated[Gender | None, Field(
-        description="The user's gender."
-    )]
+    display_name: str | None = None
+    birthday: date | None = None
+    gender: Gender | None = None
 
     @field_validator('birthday')
     @classmethod
@@ -43,3 +39,4 @@ class UpdateUserProfile(BaseModel):
         if age < 18:
             raise ValueError("User must be 18 years or older to register.")
         return value
+
