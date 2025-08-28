@@ -1,22 +1,19 @@
 from pydantic import BaseModel, Field, EmailStr, ConfigDict, field_validator
-from typing import Annotated
 from datetime import datetime, timezone
-
 
 class CustomClaims(BaseModel):
     # デフォルト値 False は、フィールドが存在しない場合に適用されます。よって,フィールドがなくてもバリエーションエラーにならない。
     # Pydanticは「型の強制（type coercion）」を行い、bool型に変換可能な値は自動で変換しようと試みます。
     # 0はFalseに変換され、1はTrueに変換されるが、nullはbool型と互換性がないため、バリデーションエラーを引き起こす。
-    is_admin: Annotated[bool, Field(description="Administrator privileges flag.")] = False
-
+    is_admin: bool = False
 
 class Metadata(BaseModel):
     # Pydanticは入力された数値（intやfloat）をUnixタイムスタンプと解釈し、自動でdatetimeオブジェクトに変換しようとします。
     # Firebase Admin SDK for Pythonは、日時データを**Unixタイムスタンプ（float型）**として返します、が、しかし、
     # Firebase Admin SDKはミリ秒単位のUnixタイムスタンプを返してくるので、バリデーターが必要になる。
-    creation_timestamp: Annotated[datetime, Field(description="The date the user was created.")]
+    creation_timestamp: datetime
     # last_sign_in_timestampはユーザーが一度もログインしていない場合 None になる可能性があるため、| None を追加するのが安全です。
-    last_sign_in_timestamp: Annotated[datetime | None, Field(description="The date the user last signed in.")]
+    last_sign_in_timestamp: datetime | None
 
     model_config = ConfigDict(from_attributes=True)
 
