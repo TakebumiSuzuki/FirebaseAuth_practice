@@ -5,7 +5,6 @@ from backend.config import DevelopmentConfig, ProductionConfig, TestingConfig
 from backend.blueprints.auth import auth_bp
 from backend.blueprints.users import users_bp
 from backend.blueprints.admin_users import admin_users_bp
-from backend.blueprints.test import test_bp
 from backend.errors import setup_errorhandlers
 
 import firebase_admin
@@ -20,7 +19,6 @@ def create_app(config_class=DevelopmentConfig):
 
     fb_key_path = app.config.get('FIREBASE_SERVICE_ACCOUNT_KEY_PATH')
 
-    print('test')
     if fb_key_path:
         try:
             # アプリがすでに初期化されていないかチェック
@@ -41,7 +39,6 @@ def create_app(config_class=DevelopmentConfig):
         app.logger.warning("FIREBASE_SERVICE_ACCOUNT_KEY_PATHが設定されていません。Firebaseの初期化をスキップします。")
 
 
-
     db.init_app(app)
     migrate.init_app(app, db)
 
@@ -51,7 +48,6 @@ def create_app(config_class=DevelopmentConfig):
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(admin_users_bp)
-    app.register_blueprint(test_bp)
 
     return app
 

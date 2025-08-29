@@ -15,4 +15,6 @@ class ProductionConfig(BaseConfig):
 
 
 class TestingConfig(BaseConfig):
-    pass
+    TESTING = True # Flaskがテストモードで動作する
+    # テスト専用のDBを指すようにする
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL') 

@@ -15,14 +15,14 @@ const routes = [
     path:'/admin-users',
     name: 'admin-users',
     component: AdminUsers,
-    meta: { 'admin_required': true }
+    meta: { 'login_required': true, 'admin_required': true }
   },
   {
     path:'/admin-user-details/:uid',
     name: 'admin-user-details',
     component: AdminUserDetails,
     props: true,
-    meta:  { 'admin_required': true }
+    meta:  { 'login_required': true, 'admin_required': true }
   },
   {
     path: '/auth/register',
@@ -64,42 +64,29 @@ const router = createRouter({
   routes,
 })
 
-
 router.beforeEach(async (to, from)=>{
   const user = auth.currentUser
 
-  if (to.meta.login_required){
-    if (!user){
-      return {name: 'login'}
-    }
-    try{
-      const idTokenResult = await user.getIdTokenResult(true)
-      if (!idTokenResult){
-        return {name: 'login'}
-      }
-    }catch(error){
-      return {name: 'login'}
-    }
+  if (to.meta.login_required && !user){
+    return {name: 'login'}
   }
 
-
   if (to.meta.admin_required){
-    if (!user){
-      return {name: 'login'}
-    }
     try{
       const idTokenResult = await user.getIdTokenResult(true)
-      if (idTokenResult?.claims?.is_admin){
+      // getIdTokenResult() は正常に呼べれば必ずオブジェクトを返すので idTokenResult? とする必要はない
+      // また、この中には必ずclaimsを含むという仕様になっているらしいので、clams?とする必要もない
+      if (idTokenResult.claims.is_admin){
         return true
       }else{
         return {name: 'forbidden'}
       }
     }catch(error){
-      return {name: 'forbidden'}
+      console.error('Failed to get the new ID token for verify admin status.')
+      // ここにユーザーに再度試すように通知する
+      return false
     }
-
   }
-
   return true
 })
 
