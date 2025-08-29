@@ -103,26 +103,26 @@ IdTokenResultオブジェクトは、イベントの入場チケット（「VIP�
 
 
 IdTokenResultオブジェクトは以下のような構造
-  {
-    // ...その他のプロパティ
-    token: "eyJhbGciOiJSUzI1NiIsImtpZCI6...", // IDトークン（JWT）の文字列そのもの
+{
+  // ...その他のプロパティ
+  token: "eyJhbGciOiJSUzI1NiIsImtpZCI6...", // IDトークン（JWT）の文字列そのもの
 
-    claims: {
-      // ▼▼▼ Firebaseが標準で設定するクレーム ▼▼▼
-      "aud": "my-firebase-project-id",
-      "auth_time": 1678886400,
-      "exp": 1678890000, // トークンの有効期限 (Unixタイムスタンプ)
-      "iat": 1678886400, // トークンの発行日時 (Unixタイムスタンプ)
-      "iss": "https://securetoken.google.com/my-firebase-project-id",
-      "sub": "USER_UID_HERE", // ユーザーのUID
-      "user_id": "USER_UID_HERE",
-      // ...など
+  claims: {
+    // ▼▼▼ Firebaseが標準で設定するクレーム ▼▼▼
+    "aud": "my-firebase-project-id",
+    "auth_time": 1678886400,
+    "exp": 1678890000, // トークンの有効期限 (Unixタイムスタンプ)
+    "iat": 1678886400, // トークンの発行日時 (Unixタイムスタンプ)
+    "iss": "https://securetoken.google.com/my-firebase-project-id",
+    "sub": "USER_UID_HERE", // ユーザーのUID
+    "user_id": "USER_UID_HERE",
+    // ...など
 
-      // ▼▼▼ あなたが設定したカスタムクレーム ▼▼▼
-      "is_admin": true,
-      "premium_level": "gold"
-    }
-
+    // ▼▼▼ あなたが設定したカスタムクレーム ▼▼▼
+    "is_admin": true,
+    "premium_level": "gold"
   }
+
+}
 
 */
