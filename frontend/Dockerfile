@@ -5,13 +5,15 @@ WORKDIR /frontend
 
 # 2. 依存関係ファイルをコピーし、所有者を'node'ユーザーに変更する
 # nodeイメージに組み込まれている 'node' ユーザー (uid 1000) を利用
+# でも結局、COPY --chown=node:node . . この行で所有者を一括で変えているので
+# ここで --chown=node:node と書く必要はないとのこと。
 COPY --chown=node:node package.json package-lock.json ./
 
-# 3. 依存関係をインストールする（rootユーザーのまま）
+# 3. 依存関係をインストールする（rootユーザーのまま）。cはクリーンインストール
 RUN npm ci
 
 # npm ci で root が作成した node_modules ディレクトリの所有権を、
-# これからプロセスを実行する 'node' ユーザーに渡す
+# これからプロセスを実行する 'node' ユーザーに渡す。-Rは recursive
 RUN chown -R node:node /frontend/node_modules
 
 # 4. ソースコード全体をコピーし、所有者を'node'ユーザーに変更する

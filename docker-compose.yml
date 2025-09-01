@@ -5,12 +5,15 @@ services:
     ports:
       - "5173:5173"
     volumes:
+      # バインドの基本動作は、コンテナが起動するとき、コンテナ内の/frontendというパスには、
+      # ホストPCの./frontendディレクトリの中身をそのまま映し出す（マウントする)というもの。
       - ./frontend:/frontend
-      # マウントの例外ルール(ホスト側のパスを指定せず、コンテナ内の絶対パスだけを記述する)
+
       # flask側では、.venvを使わずシステムにパッケージをインストールしているので、この問題は起こらない。
-      # （初回起動なら）まず、イメージの中にある /frontend/node_modules の中身を、
-      # frontend_node_modules ボリュームにコピーする。
-      # そして、そのボリュームをコンテナの /frontend/node_modules にマウントする
+      # 初回起動時、イメージの中にある /frontend/node_modules の中身を、frontend_node_modules
+      # ボリュームにコピーする。そして、それをコンテナの /frontend/node_modules にマウントする。
+      # 一度データがコピーされた後は、frontend_node_modulesボリュームが、コンテナ内の
+      # /frontend/node_modulesの場所を「覆いかぶさる」状態になる。
       - frontend_node_modules:/frontend/node_modules
     depends_on:
       - backend

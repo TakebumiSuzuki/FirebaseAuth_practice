@@ -76,6 +76,9 @@ def user_profile_required(f):
             # で受け止める。
             raise RuntimeError("g.user must be set by login_required before user_profile_required")
 
+        # 以下のように書いた方がむしろ良いとのこと
+        assert (hasattr(g, 'user') and g.user), "FATAL: login_required must be run before user_profile_required. Decorator order is likely wrong."
+
         # firebaseにより 'uid' の存在は保証されているので、エラーハンドリングは不要
         uid = g.user['uid']
         user_profile = db.session.get(UserProfile, uid)

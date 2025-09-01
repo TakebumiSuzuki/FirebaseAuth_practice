@@ -8,22 +8,12 @@ from backend.extensions import db
 from backend.decorators import login_required, admin_required, payload_required, target_user_required_in_payload
 from backend.models.user_profile import UserProfile
 
-
-
-# from datetime import datetime, timezone
-# タイムスタンプ（ミリ秒）をISO 8601形式の文字列に変換するヘルパー関数
-# def format_timestamp(ts_ms):
-#     if not ts_ms:
-#         return None
-#     # ミリ秒を秒に変換
-#     return datetime.fromtimestamp(ts_ms / 1000.0, tz=timezone.utc).isoformat()
-
 admin_users_bp = Blueprint('admin_users', __name__, url_prefix='/api/v1/admin/users')
 
 
 @admin_users_bp.get('')
-# @login_required
-# @admin_required
+@login_required
+@admin_required
 def admin_get_users():
     # nextPageToken が存在しなければ、戻り値は None になるので、Noneは書かなくても良い。
     page_token = request.args.get('nextPageToken', None)

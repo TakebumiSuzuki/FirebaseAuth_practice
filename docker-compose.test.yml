@@ -1,0 +1,32 @@
+name: firebase_practice_test
+
+services:
+  backend_test:
+    build: ./backend
+    volumes:
+      - ./backend:/backend
+    depends_on:
+      db_test:
+        condition: service_healthy
+    environment:
+      - SQLALCHEMY_DATABASE_URI_TEST=postgresql://postgres:postgres@db_test:5432/mydatabase
+      - TEST_MODE=1
+    entrypoint: "pytest"
+    cmd: ["-v", "tests"]
+  db_test:
+    image: postgres:17.5-alpine3.20
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=mydatabase
+    ports:
+      # 5555の設定は一切使わない。なぜなら backend_test は内部的に結合されて直接5432に対し通信するから。
+      - "5555:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-mydatabase}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+

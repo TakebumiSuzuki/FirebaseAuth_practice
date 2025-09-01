@@ -68,12 +68,15 @@ router.beforeEach(async (to, from)=>{
   const user = auth.currentUser
 
   if (to.meta.login_required && !user){
+    console.log('login requiredの中')
     return {name: 'login'}
   }
 
   if (to.meta.admin_required){
+    console.log('ここ')
     try{
       const idTokenResult = await user.getIdTokenResult(true)
+      console.log(idTokenResult)
       // getIdTokenResult() は正常に呼べれば必ずオブジェクトを返すので idTokenResult? とする必要はない
       // また、この中には必ずclaimsを含むという仕様になっているらしいので、clams?とする必要もない
       if (idTokenResult.claims.is_admin){

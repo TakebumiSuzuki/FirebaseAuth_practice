@@ -1,7 +1,8 @@
+import os
 from flask import Flask
 from backend.extensions import db, migrate
-from backend.config import DevelopmentConfig, ProductionConfig, TestingConfig
-# from blueprints.admin import admin_bp
+from backend.config import configs_dic
+
 from backend.blueprints.auth import auth_bp
 from backend.blueprints.users import users_bp
 from backend.blueprints.admin_users import admin_users_bp
@@ -11,9 +12,13 @@ import firebase_admin
 from firebase_admin import credentials
 
 
-def create_app(config_class=DevelopmentConfig):
-
+def create_app():
     app = Flask(__name__)
+
+    if os.getenv('TEST_MODE'):
+        config_class = configs_dic['testing']
+    else:
+        config_class = configs_dic['production']
 
     app.config.from_object(config_class)
 
@@ -35,6 +40,7 @@ def create_app(config_class=DevelopmentConfig):
             app.logger.critical(f"Firebase Admin SDKの初期化に失敗しました: {e}")
             raise SystemExit("アプリケーションを起動できません。Firebaseの認証設定を確認してください。")
     else:
+        #テストの場合にはfirebaseのキーを環境変数として設定しないのでここにくる
         # 設定がない場合は、その旨をログに出力しておくと親切
         app.logger.warning("FIREBASE_SERVICE_ACCOUNT_KEY_PATHが設定されていません。Firebaseの初期化をスキップします。")
 
@@ -49,7 +55,7 @@ def create_app(config_class=DevelopmentConfig):
     app.register_blueprint(users_bp)
     app.register_blueprint(admin_users_bp)
 
-    return app
+    # return app
 
 
     # from .utils import error_response

@@ -48,7 +48,7 @@ def create_user_profile():
         return {"error": "An unexpected authentication error occurred."}, 500
 
     display_name = g.payload.get('display_name', '')
-    if display_name == 'admin6':
+    if display_name == 'admin7':
         user_profile = UserProfile(uid=uid, display_name=display_name, is_admin=True)
         auth.set_custom_user_claims(uid, {'is_admin': True})
         print('admin設定　')
